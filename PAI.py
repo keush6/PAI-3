@@ -18,26 +18,11 @@ import sqlite3
 import openpyxl as xl
 import time
 from PIL import ImageTk,Image
+from datetime import datetime
+from pytz import timezone
+
 ### Récupération du corps des mails ###
 
-
-
-
-def nouveau_xl(sheetname):
-    workbook = xl.Workbook()
-    workbook.save(sheetname)
-    sheet = workbook.active
-    sheet.title = 'Liste des vols en cours'
-    
-
-def ouverture_xl(sheetname):
-    global workbook
-    global sheet
-    workbook = xl.load_workbook(sheetname)
-    sheet = workbook[workbook.sheetnames[0]]
-    
-    
-    
 
 def connexion(servername):
     #gestion des mot de passe et user (introduire une table de hashage (voir double table pour plus de sécurité))
@@ -55,42 +40,90 @@ def connexion(servername):
 ### Interface Graphique (choix des paramètres) ###        
 class FenPrincipale(Tk):
     ### Action à rélaiser ne fonction du type de mail ###
-    def plan_de_vol(self,corps,id_aeronef):
-        conn = sqlite3.connect('/Users/thibautdejean/Desktop/vols_pai.db')
+    def plan_de_vol(self,corps,id_aeronef):                 # Fonction terminée fonctionelle (ajouter les villes de passage)
+        conn = sqlite3.connect('/Users/thibautdejean/Downloads/PAI/vols_pai_3.db')
         cur = conn.cursor()
+
         # Identifiant aéronef
-        cur.execute('''INSERT INTO Plans de vols(Aeronef) VALUE (?)''',(id_aeronef))
+        cur.execute('''INSERT INTO "Plans de vols"(Aeronef) VALUES (?)''',(id_aeronef,))
         
         # Identifiant aérodrome de départ
         ligne=corps[4].split('-')
         depart=ligne[1]
-        cur.execute('''INSERT INTO Plans de vols(Aerodrome de depart) VALUE (?)''',(depart[0:4]))
+        cur.execute('''UPDATE "Plans de vols" SET "Aerodrome de depart" = ? WHERE Aeronef = ?''',[(depart[0:5]),id_aeronef])
+
         # Heure de départ
-        cur.execute('''INSERT INTO Plans de vols(Heure de départ) VALUE (?)''',(depart[4:8]))
+        cur.execute('''UPDATE "Plans de vols" SET "Heure de départ" = ? WHERE Aeronef = ?''',[(depart[5:10]),id_aeronef])
+
         # Identifiant aérodrome d'arrivée
         ligne2=corps[8].split('-')
-        arrivee=ligne[1]
-        cur.execute('''INSERT INTO Plans de vols(Aerodrome d'arrivee) VALUE (?)''',(arrivee[0:4]))
+        arrivee=ligne2[1]
+        cur.execute('''UPDATE "Plans de vols" SET "Aerodrome d'arrivee" = ? WHERE Aeronef = ?''',[(arrivee[0:5]),id_aeronef])
+
         # Durée du vol
-        cur.execute('''INSERT INTO Plans de vols(Duree du vol) VALUE (?)''',(arrivee[5:9]))
+        cur.execute('''UPDATE "Plans de vols" SET "Duree du vol" = ? WHERE Aeronef = ?''',[(arrivee[5:10]),id_aeronef])
+
         # Heure d'arrivée
-        heure=depart[4:6]+arrivee[5:7]
-        minute=depart[6:8]+arrivee[7:9]
-        if minute>60:
-            minute=minute-60
+        heure=int(depart[6:8])+int(arrivee[6:8])
+        minute=int(depart[8:10])+int(arrivee[8:10])
+
+        if int(minute)>60:
+            minute=int(minute)-60
             heure+=1
         heure_arrivee = str(heure)+str(minute)
-        cur.execute('''INSERT INTO Plans de vols(DHeure d'arrivee' VALUE (?)''',(heure_arrivee))
-        print("déclaration de plan de vol")
-        conn.close()
         
+        cur.execute('''UPDATE "Plans de vols" SET "Heure d'arrivee" = ? WHERE Aeronef = ?''',[(heure_arrivee),id_aeronef])
+        print("déclaration de plan de vol")
+        conn.commit()
+        conn.close()
+
+    def ecriture_excel(self,corps, id_aeronef):             # Fonction terminée fonctionelle (ajouter les villes de passage)
+        ### Fonction qui inscrit le mail dans le fichier Excel ###
+
+        #Ouverture du fichier
+        wb = xl.load_workbook('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+        feuille = wb['Vols en cours']
+
+        #Ligne excel
+        i=6
+        while feuille.cell(i, 4).value != None :
+            i+=1
+
+        # Identifiant aérodrome de départ
+        ligne=corps[0].split('-')
+        depart=ligne[2]
+
+        #Recuperation vol dans bdd
+        conn = sqlite3.connect('/Users/thibautdejean/Downloads/PAI/vols_pai_3.db')
+        cur = conn.cursor()
+        cur.execute('''SELECT "Heure de départ","Duree du vol", "Aerodrome d'arrivee", "Heure d'arrivee" FROM "Plans de vols" WHERE Aeronef = ? ''', (id_aeronef,))
+        
+        vol=[]
+        for ligne in cur.fetchall():
+            vol=list(ligne)
+        
+
+        cur.close()
+        conn.close()
+
+        #Ecriture dans le fichier excel
+        feuille.cell(i,4).value = id_aeronef
+        feuille.cell(i,5).value = depart[0:5]
+        feuille.cell(i,6).value = vol[0]
+        feuille.cell(i,7).value = vol[1]
+        feuille.cell(i,8).value = vol[2]
+        feuille.cell(i,9).value = vol[3]
+
+        #Sauvegarder
+        wb.save('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+               
     def message_delai(self,corps,id_aeronef):
         ligne=corps[0].split('-')
         depart = ligne[2]
         
-        conn = sqlite3.connect('/Users/thibautdejean/Desktop/vols_pai.db')
+        conn = sqlite3.connect('/Users/thibautdejean/Desktop/vols_pai_3.db')
         cur = conn.cursor()
-        cur.execute("INSERT INTO Plans de Vols(Heure de départ) VALUE (?) WHERE Aeronef = ? AND Aerodrome de depart = ?", (depart[4:8],id_aeronef,depart[0:4]))
+        cur.execute("INSERT INTO Plans_de_vols(Heure_de_départ) VALUE (?) WHERE Aeronef = ? AND Aerodrome_de_depart = ?", (depart[4:8],id_aeronef,depart[0:4]))
         conn.close()
         
     def message_changement(self,corps,id_aeronef):
@@ -100,60 +133,23 @@ class FenPrincipale(Tk):
         
         conn = sqlite3.connect('/Users/thibautdejean/Desktop/vols_pai.db')
         cur = conn.cursor()
-        cur.execute("INSERT INTO Plans de Vols(Heure de départ) VALUE (?) WHERE Aeronef = (?)", (depart[4:8],id_aeronef))
-        cur.execute("INSERT INTO Plans de Vols(Aerodrome de départ) VALUE (?) WHERE Aeronef = (?)", (depart[0:4],id_aeronef))
-        cur.execute("INSERT INTO Plans de Vols(Heure de départ) VALUE (?) WHERE Aeronef = (?)", (arrivee,id_aeronef))
+        cur.execute("INSERT INTO Plans_de_Vols(Heure_de_départ) VALUE (?) WHERE Aeronef = (?)", (depart[4:8],id_aeronef))
+        cur.execute("INSERT INTO Plans_de_Vols(Aerodrome_de_départ) VALUE (?) WHERE Aeronef = (?)", (depart[0:4],id_aeronef))
+        cur.execute("INSERT INTO Plans_de_Vols(Heure_de_départ) VALUE (?) WHERE Aeronef = (?)", (arrivee,id_aeronef))
         
         conn.close()
-        
-    
+ 
     def message_annulation(self,corps,id_aeronef):
         #fonction à écrire
         a=True
         
     def message_depart(self,corps,id_aeronef):
-        #Ligne excel
-        i=2
-        while sheet.cell(i, 1).value != None :
-            i+=1
-            
+
+       
         #Couleur ligne excel :
-        for row in workbook.iter_rows(min_row=1, max_col=i, max_col=6):
+        for row in workbook.iter_rows(min_row=1, min_col=1, max_row=i, max_col=6):
             for cell in row:
                 cell.fill = xl.styles.PatternFill(start_color="FF00FF00", end_color="FF00FF00", patternType='solid')
-        # Identifiant aéronef
-        sheet.cell(i,1).value=id_aeronef
-        # Identifiant aérodrome de départ
-        ligne=corps[0].split('-')
-        depart=ligne[2]
-        sheet.cell(i,2).value=depart[0:4]
-        # Heure de départ
-        sheet.cell(i,3).value=depart[4:8]
-        #Recuperation vol dans bdd
-        conn = sqlite3.connect('/Users/thibautdejean/Desktop/vols_pai.db')
-        cur = conn.cursor()
-        cur.execute("SELECT Aerodrome d'arrivee, Duree du vol, Heure d'arrivee FROM Plans de vols WHERE Aeronef = ? AND Aerodrome de depart = ?", (id_aeronef,depart[0:4]))
-        vol = cur.fetchone()
-        #Aerodrome d'arrivee
-        sheet.cell(i,4).value=vol[0]
-        # Durée du vol
-        sheet.cell(i,5).value=vol[1]
-        duree = vol[1]
-        # Heure d'arrivée
-        heure=depart[4:6]+duree[0:2]
-        minute=depart[6:8]+arrivee[2:4]
-        if minute>60:
-            minute=minute-60
-            heure+=1
-        heure_arrivee = str(heure)+str(minute)
-        
-        sheet.cell(i,6).value=heure_arrivee
-        
-        conn.close()
-        workbook.close()
-        
-        
-         
         
     def message_arrive(self,corps,id_aeronef):
         
@@ -162,27 +158,25 @@ class FenPrincipale(Tk):
         
         p=0
         while p==0 :
-            for row in ws.iter_rows(values_only=True):    
+            for row in workbook.iter_rows(values_only=True):    
                 if row[1] == id_aeronef:
                     p=row[0]
        
-        for row in workbook.iter_rows(min_col=p, min_row=1, max_col=p, max_col=6):
+        for row in workbook.iter_rows(min_row=p, min_col=0, max_row=p, max_col=6):
             for cell in row:
                 cell.fill = xl.styles.PatternFill(start_color="FFFF0000", end_color="FFFF0000", patternType='solid')
         
         # VRAIE FONCTION MESSAGE ARRIVÉ
         p=0
         while p==0 :
-            for row in ws.iter_rows(values_only=True):    
+            for row in workbook.iter_rows(values_only=True):    
                 if row[1] == id_aeronef:
                     p=row[0]
-        for row in workbook.iter_rows(min_col=p, min_row=1, max_col=p, max_col=6):
+        for row in workbook.iter_rows(min_col=p, min_row=1, max_row=p, max_col=6):
             for cell in row:
                 cell.empty()
-                cell.fill = xl.styles.PatternFill(start_color="FFFFFFFF", end_color="FFFFFFFF", patternType='solid')
-        
-        
-        
+                cell.fill = xl.styles.PatternFill(start_color="FFFFFFFF", end_color="FFFFFFFF", patternType='solid')       
+         
     def message_refus(self,corps,id_aeronef):
         #fonction à écrire
         a=True
@@ -238,6 +232,7 @@ class FenPrincipale(Tk):
         #on envoie vers une fonction spécifique selon le type de mail :
         if type_message=='FPL':
             self.plan_de_vol(corps,id_aeronef)
+            self.ecriture_excel(corps,id_aeronef)
         elif type_message=='DLA':
             self.message_delai(corps,id_aeronef)
         elif type_message=='CHG':
