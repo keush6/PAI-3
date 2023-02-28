@@ -45,7 +45,7 @@ class FenPrincipale(Tk):
         cur = conn.cursor()
 
         # Identifiant aéronef
-        cur.execute('''INSERT INTO "Plans de vols"(Aeronef) VALUES (?)''',(id_aeronef,))
+        cur.execute('''REPLACE INTO "Plans de vols"(Aeronef) VALUES (?)''',(id_aeronef,))
         
         # Identifiant aérodrome de départ
         ligne=corps[4].split('-')
@@ -73,6 +73,16 @@ class FenPrincipale(Tk):
         heure_arrivee = str(heure)+str(minute)
         
         cur.execute('''UPDATE "Plans de vols" SET "Heure d'arrivee" = ? WHERE Aeronef = ?''',[(heure_arrivee),id_aeronef])
+
+        # Chemin
+
+        ligne3 = corps[7].split(' ')
+        ligne4 = ligne3[2:len(ligne)]
+        villes = ' '.join(ligne4)
+
+        cur.execute('''UPDATE "Plans de vols" SET "Chemin" = ? WHERE Aeronef = ?''',[villes,id_aeronef])
+
+
         print("déclaration de plan de vol")
         conn.commit()
         conn.close()
@@ -90,13 +100,13 @@ class FenPrincipale(Tk):
             i+=1
 
         # Identifiant aérodrome de départ
-        ligne=corps[0].split('-')
-        depart=ligne[2]
+        ligne=corps[4].split('-')
+        depart=ligne[1]
 
         #Recuperation vol dans bdd
         conn = sqlite3.connect('/Users/thibautdejean/Downloads/PAI/vols_pai_3.db')
         cur = conn.cursor()
-        cur.execute('''SELECT "Heure de départ","Duree du vol", "Aerodrome d'arrivee", "Heure d'arrivee" FROM "Plans de vols" WHERE Aeronef = ? ''', (id_aeronef,))
+        cur.execute('''SELECT "Heure de départ","Duree du vol", "Aerodrome d'arrivee", "Heure d'arrivee", "Chemin" FROM "Plans de vols" WHERE Aeronef = ? ''', (id_aeronef,))
         
         vol=[]
         for ligne in cur.fetchall():
@@ -113,6 +123,7 @@ class FenPrincipale(Tk):
         feuille.cell(i,7).value = vol[1]
         feuille.cell(i,8).value = vol[2]
         feuille.cell(i,9).value = vol[3]
+        feuille.cell(i,10).value = vol[4]
 
         #Sauvegarder
         wb.save('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
@@ -121,7 +132,7 @@ class FenPrincipale(Tk):
         ligne=corps[0].split('-')
         depart = ligne[2]
         
-        conn = sqlite3.connect('/Users/thibautdejean/Desktop/vols_pai_3.db')
+        conn = sqlite3.connect('/Users/thibautdejean/Downloads/PAI/vols_pai_3.db')
         cur = conn.cursor()
         cur.execute("INSERT INTO Plans_de_vols(Heure_de_départ) VALUE (?) WHERE Aeronef = ? AND Aerodrome_de_depart = ?", (depart[4:8],id_aeronef,depart[0:4]))
         conn.close()
@@ -139,18 +150,47 @@ class FenPrincipale(Tk):
         
         conn.close()
  
-    def message_annulation(self,corps,id_aeronef):
-        #fonction à écrire
-        a=True
-        
-    def message_depart(self,corps,id_aeronef):
+    def message_annulation(self,corps,id_aeronef):          # Fonction terminée à tester
+        #Base de donnée
+        conn = sqlite3.connect('/Users/thibautdejean/Downloads/PAI/vols_pai_3.db')
+        cur = conn.cursor()
 
-       
-        #Couleur ligne excel :
-        for row in workbook.iter_rows(min_row=1, min_col=1, max_row=i, max_col=6):
-            for cell in row:
-                cell.fill = xl.styles.PatternFill(start_color="FF00FF00", end_color="FF00FF00", patternType='solid')
+        cur.execute('''DELETE FROM "Plans de vols" WHERE Aeronef = ?''', (id_aeronef,))
+
+        conn.commit()
+        conn.close()
+
+        #Fichier excel
+        wb = xl.load_workbook('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+        feuille = wb['Vols en cours']
+
         
+        for row in feuille.iter_rows():
+             for cell in row:
+                 if cell.value == id_aeronef:
+                     a = (cell.coordinate[0],cell.coordinate[1])
+        
+        for j in range(4,11):
+            feuille.cell(row = a[1], column = j).value = None
+            fill = xl.PatternFill(start_color='FFFFFFFF', end_color='FFFFFFFF', fill_type='solid')
+            feuille.cell(row = a[1], column = j).fill = fill
+
+        wb.save('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+                       
+    def message_depart(self,corps,id_aeronef):              # Fonction terminée à tester
+
+        wb = xl.load_workbook('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+        feuille = wb['Vols en cours']
+        
+        for row in feuille.iter_rows():
+             for cell in row :
+                 if cell.value == id_aeronef : 
+                     a = (cell.coordinate[0],cell.coordinate[1])
+        
+        for j in range(4,11):
+            fill = xl.styles.PatternFill(start_color="FF00FF00", end_color="FF00FF00", patternType='solid')            
+            feuille.cell(row = a[1], column = j).fill = fill
+             
     def message_arrive(self,corps,id_aeronef):
         
         
@@ -199,7 +239,7 @@ class FenPrincipale(Tk):
     def plan_de_vol_complementaire(self,corps,id_aeronef):
         #fonction à écrire
         a=True
-        #
+        
     
     def compte_rendu_survol(self,corps,id_aeronef):
         #fonction à écrire
