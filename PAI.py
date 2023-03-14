@@ -40,7 +40,7 @@ def connexion(servername):
 ### Interface Graphique (choix des paramètres) ###        
 class FenPrincipale(Tk):
     ### Action à rélaiser ne fonction du type de mail ###
-    def plan_de_vol(self,corps,id_aeronef):                 # Fonction terminée fonctionelle (ajouter les villes de passage)
+    def plan_de_vol(self,corps,id_aeronef):                 # Fonction terminée fonctionelle 
         conn = sqlite3.connect('/Users/thibautdejean/Downloads/PAI/vols_pai_3.db')
         cur = conn.cursor()
 
@@ -53,7 +53,10 @@ class FenPrincipale(Tk):
         cur.execute('''UPDATE "Plans de vols" SET "Aerodrome de depart" = ? WHERE Aeronef = ?''',[(depart[0:5]),id_aeronef])
 
         # Heure de départ
-        cur.execute('''UPDATE "Plans de vols" SET "Heure de départ" = ? WHERE Aeronef = ?''',[(depart[5:10]),id_aeronef])
+        A=depart[5:10]
+        B = A[0:3] + ':' + A[3:5]
+
+        cur.execute('''UPDATE "Plans de vols" SET "Heure de départ" = ? WHERE Aeronef = ?''',[(B),id_aeronef])
 
         # Identifiant aérodrome d'arrivée
         ligne2=corps[8].split('-')
@@ -61,7 +64,9 @@ class FenPrincipale(Tk):
         cur.execute('''UPDATE "Plans de vols" SET "Aerodrome d'arrivee" = ? WHERE Aeronef = ?''',[(arrivee[0:5]),id_aeronef])
 
         # Durée du vol
-        cur.execute('''UPDATE "Plans de vols" SET "Duree du vol" = ? WHERE Aeronef = ?''',[(arrivee[5:10]),id_aeronef])
+        C=arrivee[5:10]
+        D = C[0:3] + ':' + C[3:5]
+        cur.execute('''UPDATE "Plans de vols" SET "Duree du vol" = ? WHERE Aeronef = ?''',[(D),id_aeronef])
 
         # Heure d'arrivée
         heure=int(depart[6:8])+int(arrivee[6:8])
@@ -71,23 +76,29 @@ class FenPrincipale(Tk):
             minute=int(minute)-60
             heure+=1
         heure_arrivee = str(heure)+str(minute)
+
+        E = heure_arrivee[0:2] + ':' + heure_arrivee[2:4]
         
-        cur.execute('''UPDATE "Plans de vols" SET "Heure d'arrivee" = ? WHERE Aeronef = ?''',[(heure_arrivee),id_aeronef])
+        cur.execute('''UPDATE "Plans de vols" SET "Heure d'arrivee" = ? WHERE Aeronef = ?''',[(E),id_aeronef])
 
         # Chemin
-
-        ligne3 = corps[7].split(' ')
-        ligne4 = ligne3[2:len(ligne)]
+        
+        ligne3 = corps[6].split(' ')
+        print(ligne3)
+        ligne4 = ligne3[2:len(ligne3)]
+        print(ligne4)
         villes = ' '.join(ligne4)
 
-        cur.execute('''UPDATE "Plans de vols" SET "Chemin" = ? WHERE Aeronef = ?''',[villes,id_aeronef])
+        print(villes)
+
+        cur.execute('''UPDATE "Plans de vols" SET "Chemin" = ? WHERE Aeronef = ?''',[(villes),id_aeronef])
 
 
         print("déclaration de plan de vol")
         conn.commit()
         conn.close()
 
-    def ecriture_excel(self,corps, id_aeronef):             # Fonction terminée fonctionelle (ajouter les villes de passage)
+    def ecriture_excel(self,corps, id_aeronef):             # Fonction terminée fonctionelle 
         ### Fonction qui inscrit le mail dans le fichier Excel ###
 
         #Ouverture du fichier
@@ -128,14 +139,47 @@ class FenPrincipale(Tk):
         #Sauvegarder
         wb.save('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
                
-    def message_delai(self,corps,id_aeronef):
-        ligne=corps[0].split('-')
-        depart = ligne[2]
+    def message_delai(self,corps,id_aeronef):               # Fonction terminée à tester
+
+        #Base de donnée
+        ligne=corps[4].split('-')
+        depart=ligne[1]
         
         conn = sqlite3.connect('/Users/thibautdejean/Downloads/PAI/vols_pai_3.db')
         cur = conn.cursor()
-        cur.execute("INSERT INTO Plans_de_vols(Heure_de_départ) VALUE (?) WHERE Aeronef = ? AND Aerodrome_de_depart = ?", (depart[4:8],id_aeronef,depart[0:4]))
+        cur.execute('''UPDATE "Plans de vols" SET "Heure de départ" = ? WHERE Aeronef = ? AND "Aerodrome de depart" = ?''', (depart[5:10],id_aeronef,depart[0:5]))
+        
+        ligne2=corps[8].split('-')
+        arrivee=ligne2[1]
+
+        heure=int(depart[6:8])+int(arrivee[6:8])
+        minute=int(depart[8:10])+int(arrivee[8:10])
+
+        if int(minute)>60:
+            minute=int(minute)-60
+            heure+=1
+        heure_arrivee = str(heure)+str(minute)
+        
+        cur.execute('''UPDATE "Plans de vols" SET "Heure d'arrivee" = ? WHERE Aeronef = ? AND "Aerodrome de depart" = ?''', (depart[5:10],id_aeronef,depart[0:5]))
+
+        conn.commit()
         conn.close()
+
+        #Excel   
+        wb = xl.load_workbook('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+        feuille = wb['Vols en cours']
+
+        
+        for row in feuille.iter_rows():
+             for cell in row:
+                 if cell.value == id_aeronef:
+                     a = (cell.row,cell.column)
+        
+        feuille.cell(row=a[0],column=6).value=depart[5:10]
+
+        feuille.cell(row=a[0],column=9).value=heure_arrivee
+
+        wb.save('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
         
     def message_changement(self,corps,id_aeronef):
         ligne=corps[0].split('-')
@@ -146,7 +190,7 @@ class FenPrincipale(Tk):
         cur = conn.cursor()
         cur.execute("INSERT INTO Plans_de_Vols(Heure_de_départ) VALUE (?) WHERE Aeronef = (?)", (depart[4:8],id_aeronef))
         cur.execute("INSERT INTO Plans_de_Vols(Aerodrome_de_départ) VALUE (?) WHERE Aeronef = (?)", (depart[0:4],id_aeronef))
-        cur.execute("INSERT INTO Plans_de_Vols(Heure_de_départ) VALUE (?) WHERE Aeronef = (?)", (arrivee,id_aeronef))
+        cur.execute("INSERT INTO Plans_de_Vols(Heure_d'arrivee) VALUE (?) WHERE Aeronef = (?)", (arrivee,id_aeronef))
         
         conn.close()
  
@@ -168,31 +212,45 @@ class FenPrincipale(Tk):
         for row in feuille.iter_rows():
              for cell in row:
                  if cell.value == id_aeronef:
-                     a = (cell.coordinate[0],cell.coordinate[1])
+                     a = (cell.row,cell.column)
         
         for j in range(4,11):
-            feuille.cell(row = a[1], column = j).value = None
+            feuille.cell(row = a[0], column = j).value = None
             fill = xl.PatternFill(start_color='FFFFFFFF', end_color='FFFFFFFF', fill_type='solid')
-            feuille.cell(row = a[1], column = j).fill = fill
+            feuille.cell(row = a[0], column = j).fill = fill
 
         wb.save('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
                        
-    def message_depart(self,corps,id_aeronef):              # Fonction terminée à tester
+    def message_depart(self,corps,id_aeronef):              # Fonction terminée fonctionnelle 
+               
+        # Identification de l'aeronef
+        ligne=corps[0].split('-')
+        b = ligne[1].split(' ')
+        id = ' '+b[0][0:2]+b[0][len(b[0])-2:len(b[0])]+b[1]+' '
+        print(id)
 
+    
+        # CHangement de couleur sur l'excel
         wb = xl.load_workbook('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
         feuille = wb['Vols en cours']
+
         
+        
+        a=[1,1]
         for row in feuille.iter_rows():
              for cell in row :
-                 if cell.value == id_aeronef : 
-                     a = (cell.coordinate[0],cell.coordinate[1])
-        
+                 if str(cell.value) == str(id) : 
+                    a = (cell.column,cell.row)
+                    print(a)
+
+         
         for j in range(4,11):
             fill = xl.styles.PatternFill(start_color="FF00FF00", end_color="FF00FF00", patternType='solid')            
             feuille.cell(row = a[1], column = j).fill = fill
+
+        wb.save('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
              
     def message_arrive(self,corps,id_aeronef):
-        
         
         # SI MESSAGE PAS ARRIVÉ PASSE LA LIGNE EN ROUGE CODE A CONSERVER
         
@@ -240,7 +298,6 @@ class FenPrincipale(Tk):
         #fonction à écrire
         a=True
         
-    
     def compte_rendu_survol(self,corps,id_aeronef):
         #fonction à écrire
         a=True
