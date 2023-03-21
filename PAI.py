@@ -2,12 +2,9 @@
 """
 Created on Tue Nov 29 14:56:47 2022
 
-@author: marti
 """
 
 ### PAI N°3 : Programme python ###
-
-
 
 ### Importation des modules ###
 
@@ -24,7 +21,7 @@ from pytz import timezone
 ### Récupération du corps des mails ###
 
 
-def connexion(servername):
+def connexion(servername): 
     #gestion des mot de passe et user (introduire une table de hashage (voir double table pour plus de sécurité))
     ORG_EMAIL = "@outlook.fr" 
     usernm = "test.pai3" + ORG_EMAIL 
@@ -250,31 +247,42 @@ class FenPrincipale(Tk):
 
         wb.save('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
              
-    def message_arrive(self,corps,id_aeronef):
+    def message_arrive(self,corps,id_aeronef):              # Fonction terminée fonctionnelle
         
-        # SI MESSAGE PAS ARRIVÉ PASSE LA LIGNE EN ROUGE CODE A CONSERVER
+        # Identification de l'aeronef
+        ligne=corps[0].split('-')
+        b = ligne[1].split(' ')
+        id = ' '+b[0][0:2]+b[0][len(b[0])-2:len(b[0])]+b[1]+' '
+        idbdd = b[0][0:2]+b[0][len(b[0])-2:len(b[0])]+b[1]
         
-        p=0
-        while p==0 :
-            for row in workbook.iter_rows(values_only=True):    
-                if row[1] == id_aeronef:
-                    p=row[0]
-       
-        for row in workbook.iter_rows(min_row=p, min_col=0, max_row=p, max_col=6):
-            for cell in row:
-                cell.fill = xl.styles.PatternFill(start_color="FFFF0000", end_color="FFFF0000", patternType='solid')
-        
-        # VRAIE FONCTION MESSAGE ARRIVÉ
-        p=0
-        while p==0 :
-            for row in workbook.iter_rows(values_only=True):    
-                if row[1] == id_aeronef:
-                    p=row[0]
-        for row in workbook.iter_rows(min_col=p, min_row=1, max_row=p, max_col=6):
-            for cell in row:
-                cell.empty()
-                cell.fill = xl.styles.PatternFill(start_color="FFFFFFFF", end_color="FFFFFFFF", patternType='solid')       
-         
+
+        # Supression BDD
+
+        conn = sqlite3.connect('/Users/thibautdejean/Downloads/PAI/vols_pai_3.db')
+        cur = conn.cursor()
+
+        cur.execute('''DELETE FROM "Plans de vols" WHERE Aeronef = ? ''', (idbdd,))
+
+        conn.commit()
+        conn.close()
+
+        # Suppression ligne Excel
+
+        wb = xl.load_workbook('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+        feuille = wb['Vols en cours']
+
+        for row in feuille.iter_rows():
+             for cell in row :
+                 if str(cell.value) == str(id) : 
+                    ligne = cell.row
+                    
+        for j in range(4,11):
+            feuille.cell(ligne,j).value = None
+            feuille.cell(ligne,j).fill = PatternFill(fill_type=None)
+
+
+        wb.save('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+             
     def message_refus(self,corps,id_aeronef):
         #fonction à écrire
         a=True
@@ -282,26 +290,71 @@ class FenPrincipale(Tk):
     def message_acceptation(self,corps,id_aeronef):
         #fonction à écrire
         a=True
-        
-    def demande_plan_vol(self,corps,id_aeronef):
-        #fonction à écrire
-        a=True
-        #envoyé pas à traiter
-        
-    def demande_plan_vol_complementaire(self,corps,id_aeronef):
-        #fonction à écrire
-        a=True
-        #case 19 
-        #envoyé par la base, pas à traiter
-        
+
     def plan_de_vol_complementaire(self,corps,id_aeronef):
         #fonction à écrire
         a=True
-        
-    def compte_rendu_survol(self,corps,id_aeronef):
         #fonction à écrire
         a=True
-         #inutile       
+
+    def tri_geographique(self,corps,id_aeronef,decoupage) : 
+
+        res = True
+
+        # Connexion à la maessagerie
+
+        ORG_EMAIL = "@outlook.fr" 
+        usernm = "test.pai3" + ORG_EMAIL 
+        passwd = "Tomblanchard3."
+        conn = imaplib.IMAP4_SSL('outlook.office365.com')
+        conn.login(usernm,passwd)
+        conn.select('Inbox')
+
+        # Recuperation arrivée, départ et noms de ville
+
+        ligne=corps[4].split('-')
+        depart=ligne[1]
+        
+        ligne2=corps[8].split('-')
+        arrivee=ligne2[1]
+
+        ligne3 = corps[6].split(' ')
+        chemin = ligne3[2:len(ligne3)]
+
+        liste_geo = depart + arrivee + chemin
+
+        # Est ce que les villes sont dans la zone de surveillance ? 
+
+        base = sqlite3.connect('/Users/thibautdejean/Downloads/PAI/Aerodromes.db')
+        cur = base.cursor()
+
+        for lieu in liste_geo : 
+            cur.execute("SELECT ? FROM table  WHERE Aeronef = ? ", (decoupage,lieu))
+            if cur.fechall() == 0:
+                res = False
+            
+
+        cur.close()
+        base.close()
+        # Recherche de l'identifiant du mail
+        if res == False : 
+            typ, data = conn.search(None, '(OR SUBJECT ? BODY ?)',(id_aeronef,id_aeronef))
+
+            for num in data[0].split():
+            
+                typ, msg_data = conn.fetch(num, '(RFC822)')
+                msg = email.message_from_bytes(msg_data[0][1])
+
+                if id_aeronef in msg.get_payload().lower():
+                
+                    msgnum = num.decode('utf-8')
+
+        # Déplacement du mail       
+
+        conn.copy(msgnum, 'Hors_zone')
+        conn.store(msgnum, '+FLAGS', '\\Deleted')
+        conn.expunge()
+
                 
     ### Reconnaissance du type de mail ###
     def reconnaissance(self, corps):
@@ -326,10 +379,15 @@ class FenPrincipale(Tk):
         ligne=corps[0].split('-')
         type_message=ligne[0].strip(' ')
         id_aeronef=ligne[1]
+        decoupage = self.__decoupage
+        #on regarde si le vole passe par une ville surveillée
+        self.tri_geographique(corps,id_aeronef,decoupage)
+
         #on envoie vers une fonction spécifique selon le type de mail :
         if type_message=='FPL':
             self.plan_de_vol(corps,id_aeronef)
             self.ecriture_excel(corps,id_aeronef)
+            print(decoupage)
         elif type_message=='DLA':
             self.message_delai(corps,id_aeronef)
         elif type_message=='CHG':
@@ -427,6 +485,11 @@ class FenPrincipale(Tk):
          self.__zone.insert(9, "Plan TR11")
          self.__zone.pack(padx=20,pady=8) 
          self.__zone.bind('<<ListboxSelect>>',self.affichage_zone)
+         if self.__zone.curselection():
+            self.__decoupage = self.__zone.get(self.__zone.curselection())
+         else:
+            print("Aucun élément sélectionné.")
+
         # deuxième fenêtre :
          self._fenetre=Toplevel(self)
          self._fenetre.title("Vol en cours")
@@ -445,7 +508,7 @@ class FenPrincipale(Tk):
         # Le canvas pour afficher le plan du découpage
          self.__zoneAffichage =Canvas(self, width = 300,height = 290,bg='white')  
          self.__zoneAffichage.pack()
-     # Commandes associées aux boutons
+        # Commandes associées aux boutons
          self.__QuitButton.config(command=self.fin)
          #phase de test : 
          self.boutonValider.config(command=self.nouvelle_fenetre)
