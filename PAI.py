@@ -241,6 +241,28 @@ class FenPrincipale(Tk):
             feuille.cell(row = a[1], column = j).fill = fill
 
         wb.save('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+
+    def retard_avion(self):
+        #on récupère l'heure actuelle
+        start_time = time.time()
+        #on parcourt la colonne des heures de départ pour obtenir ceux qui ont déjà dû partir
+        wb = xl.load_workbook('/Users/tom-b/OneDrive/Documents/Dossier centrale/cours 2A/PAi/PAI-3-Branche-Thibaut-1/vols.xlsx')
+        feuille = wb['Vols en cours']
+        colonne_heure_départ = []
+        for row in feuille.iter_rows():
+            for cell in row :
+                if not cell.value != None : 
+                    a = (cell.coordinate[0],cell.coordinate[1])
+                    print(a)
+                    #liste de liste des coordonnées des cellules contenant une heure de départ
+                    colonne_heure_départ.append(a[0])
+                    colonne_heure_départ.append(a[1])
+                    print(colonne_heure_départ)
+
+
+        #récupération des heures d'arrivée normales
+        #différence heure d'arrivée prévu/temps actuel
+        #changement code couleur
              
     def message_arrive(self,corps,id_aeronef):              # Fonction terminée fonctionnelle
         
