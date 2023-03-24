@@ -2,12 +2,9 @@
 """
 Created on Tue Nov 29 14:56:47 2022
 
-@author: marti
 """
 
 ### PAI N°3 : Programme python ###
-
-
 
 ### Importation des modules ###
 
@@ -18,28 +15,13 @@ import sqlite3
 import openpyxl as xl
 import time
 from PIL import ImageTk,Image
+from datetime import datetime
+from pytz import timezone
+
 ### Récupération du corps des mails ###
 
 
-
-
-def nouveau_xl(sheetname):
-    workbook = xl.Workbook()
-    workbook.save(sheetname)
-    sheet = workbook.active
-    sheet.title = 'Liste des vols en cours'
-    
-
-def ouverture_xl(sheetname):
-    global workbook
-    global sheet
-    workbook = xl.load_workbook(sheetname)
-    sheet = workbook[workbook.sheetnames[0]]
-    
-    
-    
-
-def connexion(servername):
+def connexion(servername): 
     #gestion des mot de passe et user (introduire une table de hashage (voir double table pour plus de sécurité))
     ORG_EMAIL = "@outlook.fr" 
     usernm = "test.pai3" + ORG_EMAIL 
@@ -55,43 +37,141 @@ def connexion(servername):
 ### Interface Graphique (choix des paramètres) ###        
 class FenPrincipale(Tk):
     ### Action à rélaiser ne fonction du type de mail ###
-    def plan_de_vol(self,corps,id_aeronef):
-        conn = sqlite3.connect('/Users/thibautdejean/Desktop/vols_pai.db')
+    def plan_de_vol(self,corps,id_aeronef):                 # Fonction terminée fonctionelle 
+        conn = sqlite3.connect('/Users/thibautdejean/Downloads/PAI/vols_pai_3.db')
         cur = conn.cursor()
+
         # Identifiant aéronef
-        cur.execute('''INSERT INTO Plans de vols(Aeronef) VALUE (?)''',(id_aeronef))
+        cur.execute('''REPLACE INTO "Plans de vols"(Aeronef) VALUES (?)''',(id_aeronef,))
         
         # Identifiant aérodrome de départ
         ligne=corps[4].split('-')
         depart=ligne[1]
-        cur.execute('''INSERT INTO Plans de vols(Aerodrome de depart) VALUE (?)''',(depart[0:4]))
+        cur.execute('''UPDATE "Plans de vols" SET "Aerodrome de depart" = ? WHERE Aeronef = ?''',[(depart[0:5]),id_aeronef])
+
         # Heure de départ
-        cur.execute('''INSERT INTO Plans de vols(Heure de départ) VALUE (?)''',(depart[4:8]))
+        A=depart[5:10]
+        B = A[0:3] + ':' + A[3:5]
+
+        cur.execute('''UPDATE "Plans de vols" SET "Heure de départ" = ? WHERE Aeronef = ?''',[(B),id_aeronef])
+
         # Identifiant aérodrome d'arrivée
         ligne2=corps[8].split('-')
-        arrivee=ligne[1]
-        cur.execute('''INSERT INTO Plans de vols(Aerodrome d'arrivee) VALUE (?)''',(arrivee[0:4]))
+        arrivee=ligne2[1]
+        cur.execute('''UPDATE "Plans de vols" SET "Aerodrome d'arrivee" = ? WHERE Aeronef = ?''',[(arrivee[0:5]),id_aeronef])
+
         # Durée du vol
-        cur.execute('''INSERT INTO Plans de vols(Duree du vol) VALUE (?)''',(arrivee[5:9]))
+        C=arrivee[5:10]
+        D = C[0:3] + ':' + C[3:5]
+        cur.execute('''UPDATE "Plans de vols" SET "Duree du vol" = ? WHERE Aeronef = ?''',[(D),id_aeronef])
+
         # Heure d'arrivée
-        heure=depart[4:6]+arrivee[5:7]
-        minute=depart[6:8]+arrivee[7:9]
-        if minute>60:
-            minute=minute-60
+        heure=int(depart[6:8])+int(arrivee[6:8])
+        minute=int(depart[8:10])+int(arrivee[8:10])
+
+        if int(minute)>60:
+            minute=int(minute)-60
             heure+=1
         heure_arrivee = str(heure)+str(minute)
-        cur.execute('''INSERT INTO Plans de vols(DHeure d'arrivee' VALUE (?)''',(heure_arrivee))
+
+        E = heure_arrivee[0:2] + ':' + heure_arrivee[2:4]
+        
+        cur.execute('''UPDATE "Plans de vols" SET "Heure d'arrivee" = ? WHERE Aeronef = ?''',[(E),id_aeronef])
+
+        # Chemin
+        
+        ligne3 = corps[6].split(' ')
+        ligne4 = ligne3[2:len(ligne3)]
+        villes = ' '.join(ligne4)
+
+        cur.execute('''UPDATE "Plans de vols" SET "Chemin" = ? WHERE Aeronef = ?''',[(villes),id_aeronef])
+
         print("déclaration de plan de vol")
+        conn.commit()
         conn.close()
-        
-    def message_delai(self,corps,id_aeronef):
-        ligne=corps[0].split('-')
-        depart = ligne[2]
-        
-        conn = sqlite3.connect('/Users/thibautdejean/Desktop/vols_pai.db')
+
+    def ecriture_excel(self,corps, id_aeronef):             # Fonction terminée fonctionelle 
+        ### Fonction qui inscrit le mail dans le fichier Excel ###
+
+        #Ouverture du fichier
+        wb = xl.load_workbook('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+        feuille = wb['Vols en cours']
+
+        #Ligne excel
+        i=6
+        while feuille.cell(i, 4).value != None :
+            i+=1
+
+        # Identifiant aérodrome de départ
+        ligne=corps[4].split('-')
+        depart=ligne[1]
+
+        #Recuperation vol dans bdd
+        conn = sqlite3.connect('/Users/thibautdejean/Downloads/PAI/vols_pai_3.db')
         cur = conn.cursor()
-        cur.execute("INSERT INTO Plans de Vols(Heure de départ) VALUE (?) WHERE Aeronef = ? AND Aerodrome de depart = ?", (depart[4:8],id_aeronef,depart[0:4]))
+        cur.execute('''SELECT "Heure de départ","Duree du vol", "Aerodrome d'arrivee", "Heure d'arrivee", "Chemin" FROM "Plans de vols" WHERE Aeronef = ? ''', (id_aeronef,))
+        
+        vol=[]
+        for ligne in cur.fetchall():
+            vol=list(ligne)
+        
+
+        cur.close()
         conn.close()
+
+        #Ecriture dans le fichier excel
+        feuille.cell(i,4).value = id_aeronef
+        feuille.cell(i,5).value = depart[0:5]
+        feuille.cell(i,6).value = vol[0]
+        feuille.cell(i,7).value = vol[1]
+        feuille.cell(i,8).value = vol[2]
+        feuille.cell(i,9).value = vol[3]
+        feuille.cell(i,10).value = vol[4]
+
+        #Sauvegarder
+        wb.save('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+               
+    def message_delai(self,corps,id_aeronef):               # Fonction terminée à tester
+
+        #Base de donnée
+        ligne=corps[4].split('-')
+        depart=ligne[1]
+        
+        conn = sqlite3.connect('/Users/thibautdejean/Downloads/PAI/vols_pai_3.db')
+        cur = conn.cursor()
+        cur.execute('''UPDATE "Plans de vols" SET "Heure de départ" = ? WHERE Aeronef = ? AND "Aerodrome de depart" = ?''', (depart[5:10],id_aeronef,depart[0:5]))
+        
+        ligne2=corps[8].split('-')
+        arrivee=ligne2[1]
+
+        heure=int(depart[6:8])+int(arrivee[6:8])
+        minute=int(depart[8:10])+int(arrivee[8:10])
+
+        if int(minute)>60:
+            minute=int(minute)-60
+            heure+=1
+        heure_arrivee = str(heure)+str(minute)
+        
+        cur.execute('''UPDATE "Plans de vols" SET "Heure d'arrivee" = ? WHERE Aeronef = ? AND "Aerodrome de depart" = ?''', (depart[5:10],id_aeronef,depart[0:5]))
+
+        conn.commit()
+        conn.close()
+
+        #Excel   
+        wb = xl.load_workbook('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+        feuille = wb['Vols en cours']
+
+        
+        for row in feuille.iter_rows():
+             for cell in row:
+                 if cell.value == id_aeronef:
+                     a = (cell.row,cell.column)
+        
+        feuille.cell(row=a[0],column=6).value=depart[5:10]
+
+        feuille.cell(row=a[0],column=9).value=heure_arrivee
+
+        wb.save('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
         
     def message_changement(self,corps,id_aeronef):
         ligne=corps[0].split('-')
@@ -100,89 +180,104 @@ class FenPrincipale(Tk):
         
         conn = sqlite3.connect('/Users/thibautdejean/Desktop/vols_pai.db')
         cur = conn.cursor()
-        cur.execute("INSERT INTO Plans de Vols(Heure de départ) VALUE (?) WHERE Aeronef = (?)", (depart[4:8],id_aeronef))
-        cur.execute("INSERT INTO Plans de Vols(Aerodrome de départ) VALUE (?) WHERE Aeronef = (?)", (depart[0:4],id_aeronef))
-        cur.execute("INSERT INTO Plans de Vols(Heure de départ) VALUE (?) WHERE Aeronef = (?)", (arrivee,id_aeronef))
+        cur.execute("INSERT INTO Plans_de_Vols(Heure_de_départ) VALUE (?) WHERE Aeronef = (?)", (depart[4:8],id_aeronef))
+        cur.execute("INSERT INTO Plans_de_Vols(Aerodrome_de_départ) VALUE (?) WHERE Aeronef = (?)", (depart[0:4],id_aeronef))
+        cur.execute("INSERT INTO Plans_de_Vols(Heure_d'arrivee) VALUE (?) WHERE Aeronef = (?)", (arrivee,id_aeronef))
         
         conn.close()
-        
-    
-    def message_annulation(self,corps,id_aeronef):
-        #fonction à écrire
-        a=True
-        
-    def message_depart(self,corps,id_aeronef):
-        #Ligne excel
-        i=2
-        while sheet.cell(i, 1).value != None :
-            i+=1
-            
-        #Couleur ligne excel :
-        for row in workbook.iter_rows(min_row=1, max_col=i, max_col=6):
-            for cell in row:
-                cell.fill = xl.styles.PatternFill(start_color="FF00FF00", end_color="FF00FF00", patternType='solid')
-        # Identifiant aéronef
-        sheet.cell(i,1).value=id_aeronef
-        # Identifiant aérodrome de départ
-        ligne=corps[0].split('-')
-        depart=ligne[2]
-        sheet.cell(i,2).value=depart[0:4]
-        # Heure de départ
-        sheet.cell(i,3).value=depart[4:8]
-        #Recuperation vol dans bdd
-        conn = sqlite3.connect('/Users/thibautdejean/Desktop/vols_pai.db')
+ 
+    def message_annulation(self,corps,id_aeronef):          # Fonction terminée à tester
+        #Base de donnée
+        conn = sqlite3.connect('/Users/thibautdejean/Downloads/PAI/vols_pai_3.db')
         cur = conn.cursor()
-        cur.execute("SELECT Aerodrome d'arrivee, Duree du vol, Heure d'arrivee FROM Plans de vols WHERE Aeronef = ? AND Aerodrome de depart = ?", (id_aeronef,depart[0:4]))
-        vol = cur.fetchone()
-        #Aerodrome d'arrivee
-        sheet.cell(i,4).value=vol[0]
-        # Durée du vol
-        sheet.cell(i,5).value=vol[1]
-        duree = vol[1]
-        # Heure d'arrivée
-        heure=depart[4:6]+duree[0:2]
-        minute=depart[6:8]+arrivee[2:4]
-        if minute>60:
-            minute=minute-60
-            heure+=1
-        heure_arrivee = str(heure)+str(minute)
-        
-        sheet.cell(i,6).value=heure_arrivee
-        
+
+        cur.execute('''DELETE FROM "Plans de vols" WHERE Aeronef = ?''', (id_aeronef,))
+
+        conn.commit()
         conn.close()
-        workbook.close()
+
+        #Fichier excel
+        wb = xl.load_workbook('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+        feuille = wb['Vols en cours']
+
+        
+        for row in feuille.iter_rows():
+             for cell in row:
+                 if cell.value == id_aeronef:
+                     a = (cell.row,cell.column)
+        
+        for j in range(4,11):
+            feuille.cell(row = a[0], column = j).value = None
+            fill = xl.PatternFill(start_color='FFFFFFFF', end_color='FFFFFFFF', fill_type='solid')
+            feuille.cell(row = a[0], column = j).fill = fill
+
+        wb.save('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+                       
+    def message_depart(self,corps,id_aeronef):              # Fonction terminée fonctionnelle 
+               
+        # Identification de l'aeronef
+        ligne=corps[0].split('-')
+        b = ligne[1].split(' ')
+        id = ' '+b[0][0:2]+b[0][len(b[0])-2:len(b[0])]+b[1]+' '
+        print(id)
+
+    
+        # CHangement de couleur sur l'excel
+        wb = xl.load_workbook('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+        feuille = wb['Vols en cours']
+
         
         
+        a=[1,1]
+        for row in feuille.iter_rows():
+             for cell in row :
+                 if str(cell.value) == str(id) : 
+                    a = (cell.column,cell.row)
+                    print(a)
+
          
+        for j in range(4,11):
+            fill = xl.styles.PatternFill(start_color="FF00FF00", end_color="FF00FF00", patternType='solid')            
+            feuille.cell(row = a[1], column = j).fill = fill
+
+        wb.save('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+             
+    def message_arrive(self,corps,id_aeronef):              # Fonction terminée fonctionnelle
         
-    def message_arrive(self,corps,id_aeronef):
+        # Identification de l'aeronef
+        ligne=corps[0].split('-')
+        b = ligne[1].split(' ')
+        id = ' '+b[0][0:2]+b[0][len(b[0])-2:len(b[0])]+b[1]+' '
+        idbdd = b[0][0:2]+b[0][len(b[0])-2:len(b[0])]+b[1]
         
-        
-        # SI MESSAGE PAS ARRIVÉ PASSE LA LIGNE EN ROUGE CODE A CONSERVER
-        
-        p=0
-        while p==0 :
-            for row in ws.iter_rows(values_only=True):    
-                if row[1] == id_aeronef:
-                    p=row[0]
-       
-        for row in workbook.iter_rows(min_col=p, min_row=1, max_col=p, max_col=6):
-            for cell in row:
-                cell.fill = xl.styles.PatternFill(start_color="FFFF0000", end_color="FFFF0000", patternType='solid')
-        
-        # VRAIE FONCTION MESSAGE ARRIVÉ
-        p=0
-        while p==0 :
-            for row in ws.iter_rows(values_only=True):    
-                if row[1] == id_aeronef:
-                    p=row[0]
-        for row in workbook.iter_rows(min_col=p, min_row=1, max_col=p, max_col=6):
-            for cell in row:
-                cell.empty()
-                cell.fill = xl.styles.PatternFill(start_color="FFFFFFFF", end_color="FFFFFFFF", patternType='solid')
-        
-        
-        
+
+        # Supression BDD
+
+        conn = sqlite3.connect('/Users/thibautdejean/Downloads/PAI/vols_pai_3.db')
+        cur = conn.cursor()
+
+        cur.execute('''DELETE FROM "Plans de vols" WHERE Aeronef = ? ''', (idbdd,))
+
+        conn.commit()
+        conn.close()
+
+        # Suppression ligne Excel
+
+        wb = xl.load_workbook('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+        feuille = wb['Vols en cours']
+
+        for row in feuille.iter_rows():
+             for cell in row :
+                 if str(cell.value) == str(id) : 
+                    ligne = cell.row
+                    
+        for j in range(4,11):
+            feuille.cell(ligne,j).value = None
+            feuille.cell(ligne,j).fill = xl.styles.PatternFill(fill_type=None)
+
+
+        wb.save('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+             
     def message_refus(self,corps,id_aeronef):
         #fonction à écrire
         a=True
@@ -190,27 +285,71 @@ class FenPrincipale(Tk):
     def message_acceptation(self,corps,id_aeronef):
         #fonction à écrire
         a=True
-        
-    def demande_plan_vol(self,corps,id_aeronef):
-        #fonction à écrire
-        a=True
-        #envoyé pas à traiter
-        
-    def demande_plan_vol_complementaire(self,corps,id_aeronef):
-        #fonction à écrire
-        a=True
-        #case 19 
-        #envoyé par la base, pas à traiter
-        
+
     def plan_de_vol_complementaire(self,corps,id_aeronef):
         #fonction à écrire
-        a=True
-        #
-    
-    def compte_rendu_survol(self,corps,id_aeronef):
-        #fonction à écrire
-        a=True
-         #inutile       
+        a=True    
+
+    def tri_geographique(self,corps,id_aeronef,decoupage) : 
+
+        res = True
+
+        # Connexion à la maessagerie
+
+        ORG_EMAIL = "@outlook.fr" 
+        usernm = "test.pai3" + ORG_EMAIL 
+        passwd = "Tomblanchard3."
+        conn = imaplib.IMAP4_SSL('outlook.office365.com')
+        conn.login(usernm,passwd)
+        conn.select('Inbox')
+
+        # Recuperation arrivée, départ et noms de ville
+
+        ligne=corps[4].split('-')
+        depart=[ligne[1][1:5]]
+        
+        
+        ligne2=corps[8].split('-')
+        arrivee=[ligne2[1][1:5]]
+        
+
+        ligne3 = corps[6].split(' ')
+        chemin = ligne3[2:len(ligne3)-1]
+        
+
+        liste_geo = depart + arrivee 
+        
+        # Est ce que les villes sont dans la zone de surveillance ? 
+
+        #base = sqlite3.connect('/Users/thibautdejean/Downloads/PAI/Aerodromes.db')
+        #cur = base.cursor()
+
+        #for lieu in liste_geo : 
+        #    cur.execute("SELECT ? FROM table  WHERE Aeronef = ? ", (decoupage,lieu))
+        #   if cur.fechall() == 0:
+        #        res = False
+            
+
+        # base.close()
+        # Recherche de l'identifiant du mail
+        if res == False : 
+            typ, data = conn.search(None, '(OR SUBJECT ? BODY ?)',(id_aeronef,id_aeronef))
+
+            for num in data[0].split():
+            
+                typ, msg_data = conn.fetch(num, '(RFC822)')
+                msg = email.message_from_bytes(msg_data[0][1])
+
+                if id_aeronef in msg.get_payload().lower():
+                
+                    msgnum = num.decode('utf-8')
+
+        # Déplacement du mail       
+
+        conn.copy(msgnum, 'Hors_zone')
+        conn.store(msgnum, '+FLAGS', '\\Deleted')
+        conn.expunge()
+
                 
     ### Reconnaissance du type de mail ###
     def reconnaissance(self, corps):
@@ -235,9 +374,16 @@ class FenPrincipale(Tk):
         ligne=corps[0].split('-')
         type_message=ligne[0].strip(' ')
         id_aeronef=ligne[1]
+        decoupage = self.decoupage
+        print(decoupage)
+        #on regarde si le vole passe par une ville surveillée
+        #  `self.tri_geographique(corps,id_aeronef,decoupage)
+
         #on envoie vers une fonction spécifique selon le type de mail :
         if type_message=='FPL':
             self.plan_de_vol(corps,id_aeronef)
+            self.ecriture_excel(corps,id_aeronef)
+            
         elif type_message=='DLA':
             self.message_delai(corps,id_aeronef)
         elif type_message=='CHG':
@@ -252,14 +398,8 @@ class FenPrincipale(Tk):
             self.message_refus(corps,id_aeronef)
         elif type_message=='ACP':
             self.message_acceptation(corps,id_aeronef)
-        elif type_message=='RQP':
-            self.demande_plan_vol(corps,id_aeronef)
-        elif type_message=='RQS':
-            self.demande_plan_vol_complementaire(corps,id_aeronef)
         elif type_message=='SPL':
             self.plan_de_vol_complementaire(corps,id_aeronef)
-        elif type_message=='CRV':
-            self.compte_rendu_survol(corps,id_aeronef)
 
 
     def affichage_zone(self,event):
@@ -269,30 +409,39 @@ class FenPrincipale(Tk):
          if img=="Plan NORM":
             self.__img = ImageTk.PhotoImage(Image.open('norm.png')) 
             self.__zoneAffichage.create_image(150, 145, image=self.__img)
+            self.decoupage = "NORM"
          elif img=="Plan LY00":
             self.__img = ImageTk.PhotoImage(Image.open('LY00.png')) 
             self.__zoneAffichage.create_image(150, 145, image=self.__img)
+            self.decoupage = "LY00"
          elif img=="Plan LY1T":
             self.__img = ImageTk.PhotoImage(Image.open('LY1T.png')) 
             self.__zoneAffichage.create_image(150, 145, image=self.__img)
+            self.decoupage = "LY1T"
          elif img=="Plan LY10":
             self.__img = ImageTk.PhotoImage(Image.open('LY10.png')) 
             self.__zoneAffichage.create_image(150, 145, image=self.__img)
+            self.decoupage = "LY10"
          elif img=="Plan LY11":
             self.__img = ImageTk.PhotoImage(Image.open('LY11.png')) 
             self.__zoneAffichage.create_image(150, 145, image=self.__img)
+            self.decoupage = "LY11"
          elif img=="Plan MM1L":
             self.__img = ImageTk.PhotoImage(Image.open('MM1L.png')) 
             self.__zoneAffichage.create_image(150, 145, image=self.__img)
+            self.decoupage = "MM1L"
          elif img=="Plan TR00":
             self.__img = ImageTk.PhotoImage(Image.open('TR00.png')) 
             self.__zoneAffichage.create_image(150, 145, image=self.__img)
+            self.decoupage = "TR00"
          elif img=="Plan TR10":
             self.__img = ImageTk.PhotoImage(Image.open('TR10.png')) 
             self.__zoneAffichage.create_image(150, 145, image=self.__img)
+            self.decoupage = "TR10"
          elif img=="Plan TR11":
             self.__img = ImageTk.PhotoImage(Image.open('TR11.png')) 
             self.__zoneAffichage.create_image(150, 145, image=self.__img)
+            self.decoupage = "TR11"
             
     def __init__(self,base):
          global etat
@@ -335,6 +484,9 @@ class FenPrincipale(Tk):
          self.__zone.insert(9, "Plan TR11")
          self.__zone.pack(padx=20,pady=8) 
          self.__zone.bind('<<ListboxSelect>>',self.affichage_zone)
+
+
+
         # deuxième fenêtre :
          self._fenetre=Toplevel(self)
          self._fenetre.title("Vol en cours")
@@ -353,7 +505,7 @@ class FenPrincipale(Tk):
         # Le canvas pour afficher le plan du découpage
          self.__zoneAffichage =Canvas(self, width = 300,height = 290,bg='white')  
          self.__zoneAffichage.pack()
-     # Commandes associées aux boutons
+        # Commandes associées aux boutons
          self.__QuitButton.config(command=self.fin)
          #phase de test : 
          self.boutonValider.config(command=self.nouvelle_fenetre)
