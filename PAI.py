@@ -38,7 +38,7 @@ def connexion(servername):
 class FenPrincipale(Tk):
     ### Action à rélaiser ne fonction du type de mail ###
     def plan_de_vol(self,corps,id_aeronef):                 # Fonction terminée fonctionelle 
-        conn = sqlite3.connect('\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols_pai_3.db')
+        conn = sqlite3.connect(r'\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols_pai_3.db')
         cur = conn.cursor()
 
         # Identifiant aéronef
@@ -94,7 +94,7 @@ class FenPrincipale(Tk):
         ### Fonction qui inscrit le mail dans le fichier Excel ###
 
         #Ouverture du fichier
-        wb = xl.load_workbook('\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols.xls')
+        wb = xl.load_workbook(r'\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols.xlsx')
         feuille = wb['Vols en cours']
 
         #Ligne excel
@@ -107,7 +107,7 @@ class FenPrincipale(Tk):
         depart=ligne[1]
 
         #Recuperation vol dans bdd
-        conn = sqlite3.connect('\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols_pai_3.db')
+        conn = sqlite3.connect(r'\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols_pai_3.db')
         cur = conn.cursor()
         cur.execute('''SELECT "Heure de départ","Duree du vol", "Aerodrome d'arrivee", "Heure d'arrivee", "Chemin" FROM "Plans de vols" WHERE Aeronef = ? ''', (id_aeronef,))
         
@@ -129,7 +129,7 @@ class FenPrincipale(Tk):
         feuille.cell(i,10).value = vol[4]
 
         #Sauvegarder
-        wb.save('\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols.xls')
+        wb.save(r'\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols.xlsx')
                
     def message_delai(self,corps,id_aeronef):               # Fonction terminée à tester
 
@@ -137,7 +137,7 @@ class FenPrincipale(Tk):
         ligne=corps[4].split('-')
         depart=ligne[1]
         
-        conn = sqlite3.connect('\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols_pai_3.db')
+        conn = sqlite3.connect(r'\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols_pai_3.db')
         cur = conn.cursor()
         cur.execute('''UPDATE "Plans de vols" SET "Heure de départ" = ? WHERE Aeronef = ? AND "Aerodrome de depart" = ?''', (depart[5:10],id_aeronef,depart[0:5]))
         
@@ -158,7 +158,7 @@ class FenPrincipale(Tk):
         conn.close()
 
         #Excel   
-        wb = xl.load_workbook('\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols.xls')
+        wb = xl.load_workbook(r'\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols.xlsx')
         feuille = wb['Vols en cours']
 
         
@@ -171,7 +171,7 @@ class FenPrincipale(Tk):
 
         feuille.cell(row=a[0],column=9).value=heure_arrivee
 
-        wb.save('\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols.xls')
+        wb.save(r'\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols.xlsx')
         
     def message_changement(self,corps,id_aeronef):
         ligne=corps[0].split('-')
@@ -188,7 +188,7 @@ class FenPrincipale(Tk):
  
     def message_annulation(self,corps,id_aeronef):          # Fonction terminée à tester
         #Base de donnée
-        conn = sqlite3.connect('\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols_pai_3.db')
+        conn = sqlite3.connect(r'\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols_pai_3.db')
         cur = conn.cursor()
 
         cur.execute('''DELETE FROM "Plans de vols" WHERE Aeronef = ?''', (id_aeronef,))
@@ -197,7 +197,7 @@ class FenPrincipale(Tk):
         conn.close()
 
         #Fichier excel
-        wb = xl.load_workbook('\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols.xls')
+        wb = xl.load_workbook(r'\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols.xlsx')
         feuille = wb['Vols en cours']
 
         
@@ -211,7 +211,7 @@ class FenPrincipale(Tk):
             fill = xl.PatternFill(start_color='FFFFFFFF', end_color='FFFFFFFF', fill_type='solid')
             feuille.cell(row = a[0], column = j).fill = fill
 
-        wb.save('\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols.xls')
+        wb.save(r'\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols.xlsx')
                        
     def message_depart(self,corps,id_aeronef): # Fonction terminée fonctionnelle 
                
@@ -223,7 +223,7 @@ class FenPrincipale(Tk):
 
     
         # CHangement de couleur sur l'excel
-        wb = xl.load_workbook('\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols.xls')
+        wb = xl.load_workbook(r'\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols.xlsx')
         feuille = wb['Vols en cours']
 
         
@@ -240,13 +240,13 @@ class FenPrincipale(Tk):
             fill = xl.styles.PatternFill(start_color="FF00FF00", end_color="FF00FF00", patternType='solid')            
             feuille.cell(row = a[1], column = j).fill = fill
 
-        wb.save('\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols.xls')
+        wb.save(r'\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols.xlsx')
 
     def retard_avion(self):
         #on récupère l'heure actuelle
         start_time = time.time()
         #on parcourt la colonne des heures de départ pour obtenir ceux qui ont déjà dû partir
-        wb = xl.load_workbook('/Users/tom-b/OneDrive/Documents/Dossier centrale/cours 2A/PAi/PAI-3-Branche-Thibaut-1/vols.xlsx')
+        wb = xl.load_workbook('/Users/tom-b/OneDrive/Documents/Dossier centrale/cours 2A/PAi/PAI-3-Branche-Thibaut-1/vols.xlsxx')
         feuille = wb['Vols en cours']
         colonne_heure_départ = []
         for row in feuille.iter_rows():
@@ -275,7 +275,7 @@ class FenPrincipale(Tk):
 
         # Supression BDD
 
-        conn = sqlite3.connect('\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols_pai_3.db')
+        conn = sqlite3.connect(r'\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols_pai_3.db')
         cur = conn.cursor()
 
         cur.execute('''DELETE FROM "Plans de vols" WHERE Aeronef = ? ''', (idbdd,))
@@ -285,7 +285,7 @@ class FenPrincipale(Tk):
 
         # Suppression ligne Excel
 
-        wb = xl.load_workbook('\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols.xls')
+        wb = xl.load_workbook(r'\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols.xlsx')
         feuille = wb['Vols en cours']
 
         for row in feuille.iter_rows():
@@ -298,7 +298,7 @@ class FenPrincipale(Tk):
             feuille.cell(ligne,j).fill = xl.styles.PatternFill(fill_type=None)
 
 
-        wb.save('\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols.xls')
+        wb.save(r'\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols.xlsx')
              
     def message_refus(self,corps,id_aeronef):
         #fonction à écrire
