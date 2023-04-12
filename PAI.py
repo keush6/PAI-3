@@ -18,6 +18,9 @@ from PIL import ImageTk,Image
 from datetime import datetime
 from pytz import timezone
 
+
+### Récupération du corps des mails ###
+
 ### Récupération du corps des mails ###
 
 
@@ -38,7 +41,7 @@ def connexion(servername):
 class FenPrincipale(Tk):
     ### Action à rélaiser ne fonction du type de mail ###
     def plan_de_vol(self,corps,id_aeronef):                 # Fonction terminée fonctionelle 
-        conn = sqlite3.connect('/Users/thibautdejean/Downloads/PAI/vols_pai_3.db')
+        conn = sqlite3.connect('/Users/thibautdejean/Downloads/PAI-git/PAI-3/vols_pai_3.db')
         cur = conn.cursor()
 
         # Identifiant aéronef
@@ -81,15 +84,10 @@ class FenPrincipale(Tk):
         # Chemin
         
         ligne3 = corps[6].split(' ')
-        print(ligne3)
         ligne4 = ligne3[2:len(ligne3)]
-        print(ligne4)
         villes = ' '.join(ligne4)
 
-        print(villes)
-
         cur.execute('''UPDATE "Plans de vols" SET "Chemin" = ? WHERE Aeronef = ?''',[(villes),id_aeronef])
-
 
         print("déclaration de plan de vol")
         conn.commit()
@@ -99,7 +97,7 @@ class FenPrincipale(Tk):
         ### Fonction qui inscrit le mail dans le fichier Excel ###
 
         #Ouverture du fichier
-        wb = xl.load_workbook('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+        wb = xl.load_workbook('/Users/thibautdejean/Downloads/PAI-git/PAI-3/vols.xlsx')
         feuille = wb['Vols en cours']
 
         #Ligne excel
@@ -112,7 +110,7 @@ class FenPrincipale(Tk):
         depart=ligne[1]
 
         #Recuperation vol dans bdd
-        conn = sqlite3.connect('/Users/thibautdejean/Downloads/PAI/vols_pai_3.db')
+        conn = sqlite3.connect('/Users/thibautdejean/Downloads/PAI-git/PAI-3/vols_pai_3.db')
         cur = conn.cursor()
         cur.execute('''SELECT "Heure de départ","Duree du vol", "Aerodrome d'arrivee", "Heure d'arrivee", "Chemin" FROM "Plans de vols" WHERE Aeronef = ? ''', (id_aeronef,))
         
@@ -134,7 +132,7 @@ class FenPrincipale(Tk):
         feuille.cell(i,10).value = vol[4]
 
         #Sauvegarder
-        wb.save('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+        wb.save('/Users/thibautdejean/Downloads/PAI-git/PAI-3/vols.xlsx')
                
     def message_delai(self,corps,id_aeronef):               # Fonction terminée à tester
 
@@ -142,7 +140,7 @@ class FenPrincipale(Tk):
         ligne=corps[4].split('-')
         depart=ligne[1]
         
-        conn = sqlite3.connect('/Users/thibautdejean/Downloads/PAI/vols_pai_3.db')
+        conn = sqlite3.connect('/Users/thibautdejean/Downloads/PAI-git/PAI-3/vols_pai_3.db')
         cur = conn.cursor()
         cur.execute('''UPDATE "Plans de vols" SET "Heure de départ" = ? WHERE Aeronef = ? AND "Aerodrome de depart" = ?''', (depart[5:10],id_aeronef,depart[0:5]))
         
@@ -163,7 +161,7 @@ class FenPrincipale(Tk):
         conn.close()
 
         #Excel   
-        wb = xl.load_workbook('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+        wb = xl.load_workbook('/Users/thibautdejean/Downloads/PAI-git/PAI-3/vols.xlsx')
         feuille = wb['Vols en cours']
 
         
@@ -176,7 +174,7 @@ class FenPrincipale(Tk):
 
         feuille.cell(row=a[0],column=9).value=heure_arrivee
 
-        wb.save('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+        wb.save('/Users/thibautdejean/Downloads/PAI-git/PAI-3/vols.xlsx')
         
     def message_changement(self,corps,id_aeronef):
         ligne=corps[0].split('-')
@@ -193,7 +191,7 @@ class FenPrincipale(Tk):
  
     def message_annulation(self,corps,id_aeronef):          # Fonction terminée à tester
         #Base de donnée
-        conn = sqlite3.connect('/Users/thibautdejean/Downloads/PAI/vols_pai_3.db')
+        conn = sqlite3.connect('/Users/thibautdejean/Downloads/PAI-git/PAI-3/vols_pai_3.db')
         cur = conn.cursor()
 
         cur.execute('''DELETE FROM "Plans de vols" WHERE Aeronef = ?''', (id_aeronef,))
@@ -202,7 +200,7 @@ class FenPrincipale(Tk):
         conn.close()
 
         #Fichier excel
-        wb = xl.load_workbook('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+        wb = xl.load_workbook('/Users/thibautdejean/Downloads/PAI-git/PAI-3/vols.xlsx')
         feuille = wb['Vols en cours']
 
         
@@ -216,7 +214,7 @@ class FenPrincipale(Tk):
             fill = xl.PatternFill(start_color='FFFFFFFF', end_color='FFFFFFFF', fill_type='solid')
             feuille.cell(row = a[0], column = j).fill = fill
 
-        wb.save('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+        wb.save('/Users/thibautdejean/Downloads/PAI-git/PAI-3/vols.xlsx')
                        
     def message_depart(self,corps,id_aeronef):              # Fonction terminée fonctionnelle 
                
@@ -228,7 +226,7 @@ class FenPrincipale(Tk):
 
     
         # CHangement de couleur sur l'excel
-        wb = xl.load_workbook('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+        wb = xl.load_workbook('/Users/thibautdejean/Downloads/PAI-git/PAI-3/vols.xlsx')
         feuille = wb['Vols en cours']
 
         
@@ -245,8 +243,60 @@ class FenPrincipale(Tk):
             fill = xl.styles.PatternFill(start_color="FF00FF00", end_color="FF00FF00", patternType='solid')            
             feuille.cell(row = a[1], column = j).fill = fill
 
-        wb.save('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
-             
+        wb.save('/Users/thibautdejean/Downloads/PAI-git/PAI-3/vols.xlsx')
+
+    def iter_retard_avion(self): #changements de couleur des cases à chaque boucle 
+        wb = xl.load_workbook('/Users/thibautdejean/Downloads/PAI-git/PAI-3/vols.xlsx')
+        feuille = wb['Vols en cours']
+        colonne_heure_arrivée = []
+
+        #on récupère le temps actuel
+        temps_actuel = time.strftime("%H:%M", time.localtime())
+
+        #on récupère les heures d'arrivée
+        for col in feuille.iter_cols():
+            header_cell = col[4]
+            if header_cell.value == "Heure d'arrivée":
+                for cell in col:
+                    if cell.value != None and cell.value != "Heure d'arrivée":
+                        colonne_heure_arrivée.append(cell.value)
+
+        #on compare les heures d'arrivée avec le temps actuel
+        for heure in colonne_heure_arrivée:
+            if (int(heure[0:2]) < int(temps_actuel[0:2])) or (int(heure[0:2]) == int(temps_actuel[0:2]) and int(heure[3:5]) < int(temps_actuel[3:5])):
+                heure_retard = (int(temps_actuel[0:2]) - int(heure[0:2]))*60 + (int(temps_actuel[3:5]) - int(heure[3:5])) #en minutes
+                if heure_retard > 20 : 
+                    #on colore la ligne en orange
+                    fill = xl.styles.PatternFill(start_color='FFA500', end_color='FFA500', fill_type='solid')
+                    ligne = colonne_heure_arrivée.index(heure) + 1 + 5 #on ajoute 5 car les 5 premières lignes ne sont pas des vols et 1 car on commence à 0 en python
+                    for j in range(1, feuille.max_column+1):
+                        cell = feuille.cell(row=ligne, column=j)
+                        cell.fill = fill
+                if heure_retard >= 60 : 
+                    #on colore la ligne en rouge
+                    fill = xl.styles.PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
+                    ligne = colonne_heure_arrivée.index(heure) + 1 + 5
+                    for j in range(1, feuille.max_column+1):
+                        cell = feuille.cell(row=ligne, column=j)
+                        cell.fill = fill
+                else : 
+                    #on colore la ligne en vert
+                    fill = xl.styles.PatternFill(start_color='00FF00', end_color='00FF00', fill_type='solid')
+                    ligne = colonne_heure_arrivée.index(heure) + 1 + 5
+                    for j in range(1, feuille.max_column+1):
+                        cell = feuille.cell(row=ligne, column=j)
+                        cell.fill = fill
+            else : 
+                #on colore la ligne en vert
+                fill = xl.styles.PatternFill(start_color='00FF00', end_color='00FF00', fill_type='solid')
+                ligne = colonne_heure_arrivée.index(heure) + 1 + 5
+                for j in range(1, feuille.max_column+1):
+                    cell = feuille.cell(row=ligne, column=j)
+                    cell.fill = fill
+
+        wb.save('/Users/thibautdejean/Downloads/PAI-git/PAI-3/vols.xlsx')
+
+
     def message_arrive(self,corps,id_aeronef):              # Fonction terminée fonctionnelle
         
         # Identification de l'aeronef
@@ -258,7 +308,7 @@ class FenPrincipale(Tk):
 
         # Supression BDD
 
-        conn = sqlite3.connect('/Users/thibautdejean/Downloads/PAI/vols_pai_3.db')
+        conn = sqlite3.connect('/Users/thibautdejean/Downloads/PAI-git/PAI-3/vols_pai_3.db')
         cur = conn.cursor()
 
         cur.execute('''DELETE FROM "Plans de vols" WHERE Aeronef = ? ''', (idbdd,))
@@ -268,7 +318,7 @@ class FenPrincipale(Tk):
 
         # Suppression ligne Excel
 
-        wb = xl.load_workbook('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+        wb = xl.load_workbook('/Users/thibautdejean/Downloads/PAI-git/PAI-3/vols.xlsx')
         feuille = wb['Vols en cours']
 
         for row in feuille.iter_rows():
@@ -278,10 +328,10 @@ class FenPrincipale(Tk):
                     
         for j in range(4,11):
             feuille.cell(ligne,j).value = None
-            feuille.cell(ligne,j).fill = PatternFill(fill_type=None)
+            feuille.cell(ligne,j).fill = xl.styles.PatternFill(fill_type=None)
 
 
-        wb.save('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+        wb.save('/Users/thibautdejean/Downloads/PAI-git/PAI-3/vols.xlsx')
              
     def message_refus(self,corps,id_aeronef):
         #fonction à écrire
@@ -293,9 +343,7 @@ class FenPrincipale(Tk):
 
     def plan_de_vol_complementaire(self,corps,id_aeronef):
         #fonction à écrire
-        a=True
-        #fonction à écrire
-        a=True
+        a=True    
 
     def tri_geographique(self,corps,id_aeronef,decoupage) : 
 
@@ -313,47 +361,65 @@ class FenPrincipale(Tk):
         # Recuperation arrivée, départ et noms de ville
 
         ligne=corps[4].split('-')
-        depart=ligne[1]
+        depart=[ligne[1][1:5]]
+        
         
         ligne2=corps[8].split('-')
-        arrivee=ligne2[1]
+        arrivee=[ligne2[1][1:5]]
+        
 
         ligne3 = corps[6].split(' ')
-        chemin = ligne3[2:len(ligne3)]
+        chemin = ligne3[2:len(ligne3)-1]
+        
 
-        liste_geo = depart + arrivee + chemin
-
+        liste_geo = depart + arrivee 
+        
         # Est ce que les villes sont dans la zone de surveillance ? 
 
-        base = sqlite3.connect('/Users/thibautdejean/Downloads/PAI/Aerodromes.db')
+        base = sqlite3.connect('/Users/thibautdejean/Downloads/PAI-git/PAI-3/Aerodromes.sqlite')
         cur = base.cursor()
-
+        
         for lieu in liste_geo : 
-            cur.execute("SELECT ? FROM table  WHERE Aeronef = ? ", (decoupage,lieu))
-            if cur.fechall() == 0:
+            cur.execute(f'''SELECT {decoupage} FROM "Liste_des_Aérodromes_en_France"  WHERE "CodeOACI" = ? ''', (lieu,))
+            a = cur.fetchall()[0][0]
+            print(a)
+            if a != '1' :
                 res = False
-            
+            else :
+                res = False
 
-        cur.close()
+        print(res)
+        
         base.close()
-        # Recherche de l'identifiant du mail
+        #Recherche de l'identifiant du mail
+        
         if res == False : 
-            typ, data = conn.search(None, '(OR SUBJECT ? BODY ?)',(id_aeronef,id_aeronef))
 
-            for num in data[0].split():
+            status, messages = conn.search(None, 'ALL')
+
+            # Récupérer l'identifiant du dernier message
+            latest_message_id = messages[0].split()[-1]
+
+            # Récupérer l'en-tête du dernier message
+            status, msg_headers = conn.fetch(latest_message_id, '(BODY.PEEK[HEADER])')
+
+            # Analyser l'en-tête pour savoir si le message est lu ou non
+            msg = email.message_from_bytes(msg_headers[0][1])
             
-                typ, msg_data = conn.fetch(num, '(RFC822)')
-                msg = email.message_from_bytes(msg_data[0][1])
+            # Récupérer le contenu du dernier message
+            status, msg_content = conn.fetch(latest_message_id, '(BODY[TEXT])')
+            content = msg_content[0][1].decode()
 
-                if id_aeronef in msg.get_payload().lower():
-                
-                    msgnum = num.decode('utf-8')
+            print(latest_message_id)
 
-        # Déplacement du mail       
+            conn.copy(latest_message_id, 'Hors_zone')
+            conn.store(latest_message_id, '+FLAGS', '\\Deleted')
 
-        conn.copy(msgnum, 'Hors_zone')
-        conn.store(msgnum, '+FLAGS', '\\Deleted')
+
         conn.expunge()
+        conn.close()
+        conn.logout()
+        return(res)
 
                 
     ### Reconnaissance du type de mail ###
@@ -379,15 +445,12 @@ class FenPrincipale(Tk):
         ligne=corps[0].split('-')
         type_message=ligne[0].strip(' ')
         id_aeronef=ligne[1]
-        decoupage = self.__decoupage
-        #on regarde si le vole passe par une ville surveillée
-        self.tri_geographique(corps,id_aeronef,decoupage)
-
+        decoupage = self.decoupage
         #on envoie vers une fonction spécifique selon le type de mail :
         if type_message=='FPL':
             self.plan_de_vol(corps,id_aeronef)
             self.ecriture_excel(corps,id_aeronef)
-            print(decoupage)
+            self.tri_geographique(corps,id_aeronef,decoupage)
         elif type_message=='DLA':
             self.message_delai(corps,id_aeronef)
         elif type_message=='CHG':
@@ -402,14 +465,8 @@ class FenPrincipale(Tk):
             self.message_refus(corps,id_aeronef)
         elif type_message=='ACP':
             self.message_acceptation(corps,id_aeronef)
-        elif type_message=='RQP':
-            self.demande_plan_vol(corps,id_aeronef)
-        elif type_message=='RQS':
-            self.demande_plan_vol_complementaire(corps,id_aeronef)
         elif type_message=='SPL':
             self.plan_de_vol_complementaire(corps,id_aeronef)
-        elif type_message=='CRV':
-            self.compte_rendu_survol(corps,id_aeronef)
 
 
     def affichage_zone(self,event):
@@ -419,30 +476,43 @@ class FenPrincipale(Tk):
          if img=="Plan NORM":
             self.__img = ImageTk.PhotoImage(Image.open('norm.png')) 
             self.__zoneAffichage.create_image(150, 145, image=self.__img)
+            self.decoupage = "NORM"
          elif img=="Plan LY00":
             self.__img = ImageTk.PhotoImage(Image.open('LY00.png')) 
             self.__zoneAffichage.create_image(150, 145, image=self.__img)
+            self.decoupage = "LY00"
          elif img=="Plan LY1T":
             self.__img = ImageTk.PhotoImage(Image.open('LY1T.png')) 
             self.__zoneAffichage.create_image(150, 145, image=self.__img)
+            self.decoupage = "LY1T"
          elif img=="Plan LY10":
             self.__img = ImageTk.PhotoImage(Image.open('LY10.png')) 
             self.__zoneAffichage.create_image(150, 145, image=self.__img)
+            self.decoupage = "LY10"
          elif img=="Plan LY11":
             self.__img = ImageTk.PhotoImage(Image.open('LY11.png')) 
             self.__zoneAffichage.create_image(150, 145, image=self.__img)
+            self.decoupage = "LY11"
          elif img=="Plan MM1L":
             self.__img = ImageTk.PhotoImage(Image.open('MM1L.png')) 
             self.__zoneAffichage.create_image(150, 145, image=self.__img)
+            self.decoupage = "MM1L"
          elif img=="Plan TR00":
             self.__img = ImageTk.PhotoImage(Image.open('TR00.png')) 
             self.__zoneAffichage.create_image(150, 145, image=self.__img)
+            self.decoupage = "TR00"
          elif img=="Plan TR10":
             self.__img = ImageTk.PhotoImage(Image.open('TR10.png')) 
             self.__zoneAffichage.create_image(150, 145, image=self.__img)
+            self.decoupage = "TR10"
          elif img=="Plan TR11":
             self.__img = ImageTk.PhotoImage(Image.open('TR11.png')) 
             self.__zoneAffichage.create_image(150, 145, image=self.__img)
+            self.decoupage = "TR11"
+         elif img=="Plan Global" : 
+            self.self.__img = ImageTk.PhotoImage(Image.open('all.png')) 
+            self.__zoneAffichage.create_image(150, 145, image=self.__img)
+            self.decoupage = "ALL"
             
     def __init__(self,base):
          global etat
@@ -485,10 +555,8 @@ class FenPrincipale(Tk):
          self.__zone.insert(9, "Plan TR11")
          self.__zone.pack(padx=20,pady=8) 
          self.__zone.bind('<<ListboxSelect>>',self.affichage_zone)
-         if self.__zone.curselection():
-            self.__decoupage = self.__zone.get(self.__zone.curselection())
-         else:
-            print("Aucun élément sélectionné.")
+
+
 
         # deuxième fenêtre :
          self._fenetre=Toplevel(self)
@@ -551,6 +619,9 @@ class FenPrincipale(Tk):
             time.sleep(start_time + j - time.time())
             (i,data,conn)=connexion(servername)
             self.mail(i,data,conn)
+            #on ajoute le changement de couleur des cases
+            self.iter_retard_avion()
+
     
     def mail(self,i,data,conn):
         #On parcours les mails 1 par 1.
