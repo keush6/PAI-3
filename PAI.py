@@ -14,9 +14,11 @@ import tkinter as tk
 import sqlite3
 import openpyxl as xl
 import time
+import PIL
 from PIL import ImageTk,Image
 from datetime import datetime
 from pytz import timezone
+
 
 
 ### Récupération du corps des mails ###
@@ -296,7 +298,6 @@ class FenPrincipale(Tk):
 
         wb.save('/Users/thibautdejean/Downloads/PAI-git/PAI-3/vols.xlsx')
 
-
     def message_arrive(self,corps,id_aeronef):              # Fonction terminée fonctionnelle
         
         # Identification de l'aeronef
@@ -333,18 +334,6 @@ class FenPrincipale(Tk):
 
         wb.save('/Users/thibautdejean/Downloads/PAI-git/PAI-3/vols.xlsx')
              
-    def message_refus(self,corps,id_aeronef):
-        #fonction à écrire
-        a=True
-        
-    def message_acceptation(self,corps,id_aeronef):
-        #fonction à écrire
-        a=True
-
-    def plan_de_vol_complementaire(self,corps,id_aeronef):
-        #fonction à écrire
-        a=True    
-
     def tri_geographique(self,corps,id_aeronef,decoupage) : 
 
         res = True
@@ -473,6 +462,9 @@ class FenPrincipale(Tk):
          self.boutonValider.config(state=ACTIVE)
          i = self.__zone.curselection()
          img = ",".join([self.__zone.get(j) for j in i])
+         
+
+
          if img=="Plan NORM":
             self.__img = ImageTk.PhotoImage(Image.open('norm.png')) 
             self.__zoneAffichage.create_image(150, 145, image=self.__img)
@@ -553,6 +545,7 @@ class FenPrincipale(Tk):
          self.__zone.insert(7, "Plan TR00")
          self.__zone.insert(8, "Plan TR10")
          self.__zone.insert(9, "Plan TR11")
+         self.__zone.insert(10,"Plan TOTAL")
          self.__zone.pack(padx=20,pady=8) 
          self.__zone.bind('<<ListboxSelect>>',self.affichage_zone)
 
