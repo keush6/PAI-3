@@ -13,6 +13,7 @@ from tkinter import *
 import tkinter as tk
 import sqlite3
 import openpyxl as xl
+from openpyxl.styles import PatternFill
 import time
 from PIL import ImageTk,Image
 from datetime import datetime
@@ -36,9 +37,9 @@ def connexion(servername):
 
 ### Interface Graphique (choix des paramètres) ###        
 class FenPrincipale(Tk):
-    ### Action à rélaiser ne fonction du type de mail ###
+    ### Action à rélaiser en fonction du type de mail ###
     def plan_de_vol(self,corps,id_aeronef):                 # Fonction terminée fonctionelle 
-        conn = sqlite3.connect('/Users/thibautdejean/Downloads/PAI/vols_pai_3.db')
+        conn = sqlite3.connect(r'\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols_pai_3.db')
         cur = conn.cursor()
 
         # Identifiant aéronef
@@ -46,35 +47,47 @@ class FenPrincipale(Tk):
         
         # Identifiant aérodrome de départ
         ligne=corps[4].split('-')
-        depart=ligne[1]
+        #ajout juste sur ce pc car division str différente
+        depart=ligne[1][:-2]
+        print('depart' , list(depart))
         cur.execute('''UPDATE "Plans de vols" SET "Aerodrome de depart" = ? WHERE Aeronef = ?''',[(depart[0:5]),id_aeronef])
 
         # Heure de départ
-        A=depart[5:10]
-        B = A[0:3] + ':' + A[3:5]
+        A=depart[4:8]
+        print('A' , list(A))
+        B = A[0:2] + ':' + A[2:5]
+        print('B' , list(B))
 
         cur.execute('''UPDATE "Plans de vols" SET "Heure de départ" = ? WHERE Aeronef = ?''',[(B),id_aeronef])
 
         # Identifiant aérodrome d'arrivée
         ligne2=corps[8].split('-')
-        arrivee=ligne2[1]
+        #ajout juste sur ce pc car division str différente
+        arrivee=ligne2[1][:-2]
+        print('arrivee' , list(arrivee))
         cur.execute('''UPDATE "Plans de vols" SET "Aerodrome d'arrivee" = ? WHERE Aeronef = ?''',[(arrivee[0:5]),id_aeronef])
 
         # Durée du vol
-        C=arrivee[5:10]
-        D = C[0:3] + ':' + C[3:5]
+        C=arrivee[4:8]
+        print('C' , list(C))
+        D = C[0:2] + ':' + C[2:4]
+        print('D' , list(D))
         cur.execute('''UPDATE "Plans de vols" SET "Duree du vol" = ? WHERE Aeronef = ?''',[(D),id_aeronef])
 
         # Heure d'arrivée
-        heure=int(depart[6:8])+int(arrivee[6:8])
-        minute=int(depart[8:10])+int(arrivee[8:10])
+        heure=int(depart[4:6])+int(arrivee[4:6])
+        print('heure' , heure)
+        minute=int(depart[6:8])+int(arrivee[6:8])
+        print('minute' , minute)
 
-        if int(minute)>60:
+        if int(minute)>=60:
             minute=int(minute)-60
             heure+=1
         heure_arrivee = str(heure)+str(minute)
+        print('heure_arrivee', heure_arrivee)
 
         E = heure_arrivee[0:2] + ':' + heure_arrivee[2:4]
+        print('E' , E)
         
         cur.execute('''UPDATE "Plans de vols" SET "Heure d'arrivee" = ? WHERE Aeronef = ?''',[(E),id_aeronef])
 
@@ -94,7 +107,7 @@ class FenPrincipale(Tk):
         ### Fonction qui inscrit le mail dans le fichier Excel ###
 
         #Ouverture du fichier
-        wb = xl.load_workbook('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+        wb = xl.load_workbook(r'\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols.xlsx')
         feuille = wb['Vols en cours']
 
         #Ligne excel
@@ -107,7 +120,7 @@ class FenPrincipale(Tk):
         depart=ligne[1]
 
         #Recuperation vol dans bdd
-        conn = sqlite3.connect('/Users/thibautdejean/Downloads/PAI/vols_pai_3.db')
+        conn = sqlite3.connect(r'\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols_pai_3.db')
         cur = conn.cursor()
         cur.execute('''SELECT "Heure de départ","Duree du vol", "Aerodrome d'arrivee", "Heure d'arrivee", "Chemin" FROM "Plans de vols" WHERE Aeronef = ? ''', (id_aeronef,))
         
@@ -129,15 +142,15 @@ class FenPrincipale(Tk):
         feuille.cell(i,10).value = vol[4]
 
         #Sauvegarder
-        wb.save('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
-               
+        wb.save(r'\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols.xlsx')
+
     def message_delai(self,corps,id_aeronef):               # Fonction terminée à tester
 
         #Base de donnée
         ligne=corps[4].split('-')
         depart=ligne[1]
         
-        conn = sqlite3.connect('/Users/thibautdejean/Downloads/PAI/vols_pai_3.db')
+        conn = sqlite3.connect(r'\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols_pai_3.db')
         cur = conn.cursor()
         cur.execute('''UPDATE "Plans de vols" SET "Heure de départ" = ? WHERE Aeronef = ? AND "Aerodrome de depart" = ?''', (depart[5:10],id_aeronef,depart[0:5]))
         
@@ -158,7 +171,7 @@ class FenPrincipale(Tk):
         conn.close()
 
         #Excel   
-        wb = xl.load_workbook('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+        wb = xl.load_workbook(r'\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols.xlsx')
         feuille = wb['Vols en cours']
 
         
@@ -171,7 +184,7 @@ class FenPrincipale(Tk):
 
         feuille.cell(row=a[0],column=9).value=heure_arrivee
 
-        wb.save('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+        wb.save(r'\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols.xlsx')
         
     def message_changement(self,corps,id_aeronef):
         ligne=corps[0].split('-')
@@ -188,7 +201,7 @@ class FenPrincipale(Tk):
  
     def message_annulation(self,corps,id_aeronef):          # Fonction terminée à tester
         #Base de donnée
-        conn = sqlite3.connect('/Users/thibautdejean/Downloads/PAI/vols_pai_3.db')
+        conn = sqlite3.connect(r'\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols_pai_3.db')
         cur = conn.cursor()
 
         cur.execute('''DELETE FROM "Plans de vols" WHERE Aeronef = ?''', (id_aeronef,))
@@ -197,7 +210,7 @@ class FenPrincipale(Tk):
         conn.close()
 
         #Fichier excel
-        wb = xl.load_workbook('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+        wb = xl.load_workbook(r'\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols.xlsx')
         feuille = wb['Vols en cours']
 
         
@@ -211,9 +224,9 @@ class FenPrincipale(Tk):
             fill = xl.PatternFill(start_color='FFFFFFFF', end_color='FFFFFFFF', fill_type='solid')
             feuille.cell(row = a[0], column = j).fill = fill
 
-        wb.save('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+        wb.save(r'\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols.xlsx')
                        
-    def message_depart(self,corps,id_aeronef):              # Fonction terminée fonctionnelle 
+    def message_depart(self,corps,id_aeronef): # Fonction terminée fonctionnelle 
                
         # Identification de l'aeronef
         ligne=corps[0].split('-')
@@ -223,7 +236,7 @@ class FenPrincipale(Tk):
 
     
         # CHangement de couleur sur l'excel
-        wb = xl.load_workbook('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+        wb = xl.load_workbook(r'\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols.xlsx')
         feuille = wb['Vols en cours']
 
         
@@ -240,8 +253,71 @@ class FenPrincipale(Tk):
             fill = xl.styles.PatternFill(start_color="FF00FF00", end_color="FF00FF00", patternType='solid')            
             feuille.cell(row = a[1], column = j).fill = fill
 
-        wb.save('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
-             
+        wb.save(r'\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols.xlsx')
+
+    def iter_retard_avion(self): #changements de couleur des cases à chaque boucle 
+        wb = xl.load_workbook(r'\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols.xlsx')
+        feuille = wb['Vols en cours']
+        colonne_heure_arrivée = []
+
+        #on récupère le temps actuel
+        temps_actuel = time.strftime("%H:%M", time.localtime())
+
+        #on récupère les heures d'arrivée
+        for col in feuille.iter_cols():
+            header_cell = col[4]
+            if header_cell.value == "Heure d'arrivée":
+                for cell in col:
+                    if cell.value != None and cell.value != "Heure d'arrivée":
+                        colonne_heure_arrivée.append(cell.value)
+
+        #on compare les heures d'arrivée avec le temps actuel
+        for heure in colonne_heure_arrivée:
+            if (int(heure[0:2]) < int(temps_actuel[0:2])) or (int(heure[0:2]) == int(temps_actuel[0:2]) and int(heure[3:5]) < int(temps_actuel[3:5])):
+                heure_retard = (int(temps_actuel[0:2]) - int(heure[0:2]))*60 + (int(temps_actuel[3:5]) - int(heure[3:5])) #en minutes
+                if heure_retard > 20 : 
+                    #on colore la ligne en orange
+                    fill = PatternFill(start_color='FFA500', end_color='FFA500', fill_type='solid')
+                    ligne = colonne_heure_arrivée.index(heure) + 1 + 5 #on ajoute 5 car les 5 premières lignes ne sont pas des vols et 1 car on commence à 0 en python
+                    for j in range(1, feuille.max_column+1):
+                        cell = feuille.cell(row=ligne, column=j)
+                        cell.fill = fill
+                if heure_retard > 60 : 
+                    #on colore la ligne en rouge
+                    fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
+                    ligne = colonne_heure_arrivée.index(heure) + 1 + 5
+                    for j in range(1, feuille.max_column+1):
+                        cell = feuille.cell(row=ligne, column=j)
+                        cell.fill = fill
+                else : 
+                    #on colore la ligne en vert
+                    fill = PatternFill(start_color='00FF00', end_color='00FF00', fill_type='solid')
+                    ligne = colonne_heure_arrivée.index(heure) + 1 + 5
+                    for j in range(1, feuille.max_column+1):
+                        cell = feuille.cell(row=ligne, column=j)
+                        cell.fill = fill
+            else : 
+                #on colore la ligne en vert
+                fill = PatternFill(start_color='00FF00', end_color='00FF00', fill_type='solid')
+                ligne = colonne_heure_arrivée.index(heure) + 1 + 5
+                for j in range(1, feuille.max_column+1):
+                    cell = feuille.cell(row=ligne, column=j)
+                    cell.fill = fill
+
+        wb.save(r'\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols.xlsx')
+
+    """
+    def retard_avion(self) : #applique la fonction de retard toutes les iter minutes pendant l'exécution du code
+        global etat
+        iter = 120 #actualisation toutes les 2 mins sachant actualisation mail toutes les 10 secondes
+        start_time = time.time()
+        i = 0
+        while etat == True :
+            i+=iter
+            time.sleep(start_time + i - time.time())
+            self.iter_retard_avion()
+    """
+              
     def message_arrive(self,corps,id_aeronef):              # Fonction terminée fonctionnelle
         
         # Identification de l'aeronef
@@ -253,7 +329,7 @@ class FenPrincipale(Tk):
 
         # Supression BDD
 
-        conn = sqlite3.connect('/Users/thibautdejean/Downloads/PAI/vols_pai_3.db')
+        conn = sqlite3.connect(r'\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols_pai_3.db')
         cur = conn.cursor()
 
         cur.execute('''DELETE FROM "Plans de vols" WHERE Aeronef = ? ''', (idbdd,))
@@ -263,7 +339,7 @@ class FenPrincipale(Tk):
 
         # Suppression ligne Excel
 
-        wb = xl.load_workbook('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+        wb = xl.load_workbook(r'\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols.xlsx')
         feuille = wb['Vols en cours']
 
         for row in feuille.iter_rows():
@@ -276,7 +352,7 @@ class FenPrincipale(Tk):
             feuille.cell(ligne,j).fill = xl.styles.PatternFill(fill_type=None)
 
 
-        wb.save('/Users/thibautdejean/Downloads/PAI/vols.xlsx')
+        wb.save(r'\Users\tom-b\OneDrive\Documents\Dossier centrale\cours 2A\PAi\PAi-3\PAI-3\vols.xlsx')
              
     def message_refus(self,corps,id_aeronef):
         #fonction à écrire
@@ -531,10 +607,14 @@ class FenPrincipale(Tk):
          #Fermeture de la première fenêtre
          self.withdraw()
          # self._fenetre.deiconify()
+         #lancement de la boucle de lecture des mails
          self.lecture_mail()
+         #lancement de la boucle de coloration des cases excel
+         self.retard_avion()
+
          
          
-    ### définnir un cycle qui relance la fonction à un intervalle de temps précis afin de lire les nouveaux mails.
+    ### définir un cycle qui relance la fonction à un intervalle de temps précis afin de lire les nouveaux mails.
     def lecture_mail(self):
         global etat
         servername='outlook.office365.com'
@@ -548,6 +628,8 @@ class FenPrincipale(Tk):
             time.sleep(start_time + j - time.time())
             (i,data,conn)=connexion(servername)
             self.mail(i,data,conn)
+            #on ajoute le changement de couleur des cases
+            self.iter_retard_avion()
     
     def mail(self,i,data,conn):
         #On parcours les mails 1 par 1.
